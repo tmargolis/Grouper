@@ -1,0 +1,75 @@
+.qv-object-Grouper div.qv-object-content-container {
+	overflow: auto;
+}
+.qv-object-Grouper ul {
+	list-style: none;
+}
+.qv-object-Grouper li.data {
+	padding: 4px;
+	border-bottom: 1px solid #ddd;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+/* frequency */
+.qv-object-Grouper li.data span
+{
+	padding-left: 10px;
+	font-style: italic;
+	float:right;
+}
+/* colors when NOT in selection mode */
+
+.qv-object-Grouper li.stateS, .qv-object-Grouper li.stateL {
+	background-image: linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -o-linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -moz-linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -webkit-linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -ms-linear-gradient(top, #52cc52, #4dc04d);
+	color: #fff;
+}
+
+.qv-object-Grouper li.stateX, .qv-object-Grouper li.stateXL, .qv-object-Grouper li.stateXS {
+	background-color: #A9A9A9;
+	color: #fff;
+}
+
+.qv-object-Grouper li.stateA {
+	background-image: none;
+	background-color: #ddd;
+	color: #000;
+}
+/* colors when in selection mode */
+.qv-object-Grouper.qv-selections-active li {
+	background-image: none;
+	background-color: #ddd;
+	color: #000;
+}
+
+.qv-object-Grouper.qv-selections-active li.selected {
+	background-image: linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -o-linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -moz-linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -webkit-linear-gradient(top, #52cc52, #4dc04d);
+	background-image: -ms-linear-gradient(top, #52cc52, #4dc04d);
+	color: #fff;
+}
+
+#grouperSelect .ui-selecting { background: #61a729; }
+/*#grouperSelect .ui-selected { background: #F39814; color: white; }*/
+#grouperSelect { list-style-type: none; margin: 0; padding: 0; width: 60%; }
+/*#grouperSelect li { margin: 3px; padding: 0.4em; font-size: 1.4em; height: 18px; }*/
+
+#grouperBinSelect, .grouperBins { 
+	list-style-type: none; 
+	margin: 5px; 
+	float: left; 
+	margin-right: 10px; 
+	background: #eee; 
+	padding: 5px; 
+	width: 90%;
+}
+
+.lui-text-default {
+	padding-bottom: 5px;
+}
