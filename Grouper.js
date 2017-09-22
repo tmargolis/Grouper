@@ -37,7 +37,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 			
 			// Enigma v2
 			var secure = !Util.isSecure ? 'ws' : 'wss';
-			var appId = Util.reloadURI.substring(Util.reloadURI.indexOf('app/')+4, Util.reloadURI.indexOf('/sheet'));
+			var appId = Util.reloadURI.substring(Util.reloadURI.indexOf('app/')+4, (Util.reloadURI.indexOf('/sheet') > -1 ? Util.reloadURI.indexOf('/sheet') : Util.reloadURI.length));
 			var port = Util.port ? ':' + Util.port : '';
 			if(debug) console.log(appId);
 			var urlConfig = {
