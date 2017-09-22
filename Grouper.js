@@ -36,18 +36,21 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 			
 			// Enigma v2
 			var secure = !Util.isSecure ? 'ws' : 'wss';
+			var appId = Util.reloadURI.substring(Util.reloadURI.indexOf('app/')+4, Util.reloadURI.indexOf('/sheet'));
+			var port = Util.port ? ':' + Util.port : '';
+			console.log(appId);
 			var urlConfig = {
 				host: Util.hostname,
-				port: Util.port || undefined,
-				appId: encodeURIComponent(String.raw`C:\Users\tmg\Documents\Qlik\Sense\Apps\GrouperTest.qvf`),
+				port: port,
+				appId: appId,
 				secure: secure
 			}
+			console.log(Util);
 			var cfg = {
 				schema, 
-				url: urlConfig.secure + '://' + urlConfig.host + ':' + urlConfig.port + '/app/' + urlConfig.appId,
-				appId: 'GrouperTest.qvf'
+				url: urlConfig.secure + '://' + urlConfig.host + urlConfig.port + '/app/' + urlConfig.appId
 			};
-			// console.log('config',cfg);
+			console.log('config',cfg);
 
 			$("#addSelDim").click(function(){
 				console.log("add master dimension group based on selections");
@@ -61,10 +64,13 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 								"qId": "",
 								"qType": "SessionLists"
 							},
-							"qSelectionObjectDef": {}
+							"qSelectionObjectDef": {
+								qSelectionThreshold: 1000
+							}
 						})
 						.then((sessionObject) => sessionObject.getLayout())
 					    .then((layout) => {
+					    	console.log(JSON.stringify(layout, null, '  '))
 					    	console.log(JSON.stringify(layout.qSelectionObject.qSelections, null, '  '))
 					    	for(i=0; i<layout.qSelectionObject.qSelections.length; i++){
 					    		sField = {};
