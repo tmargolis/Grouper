@@ -14,6 +14,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
       		var self = this;
 			var html;
 			var buttonSelections;
+			var debug = false;
 			buttonSelections = "<div class='lui-text-default' id='grouperTextSel'>Create a new master item to group currently selected values (limit 6) from a single field.<BR>";
 			buttonSelections += "<button class='lui-button' id='addSelDim'>";
 			buttonSelections += "<span class='lui-button__icon  lui-icon  lui-icon--plus'></span><span class='lui-button__text'>add master dimension</span>";
@@ -38,27 +39,27 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 			var secure = !Util.isSecure ? 'ws' : 'wss';
 			var appId = Util.reloadURI.substring(Util.reloadURI.indexOf('app/')+4, Util.reloadURI.indexOf('/sheet'));
 			var port = Util.port ? ':' + Util.port : '';
-			console.log(appId);
+			if(debug) console.log(appId);
 			var urlConfig = {
 				host: Util.hostname,
 				port: port,
 				appId: appId,
 				secure: secure
 			}
-			console.log(Util);
+			if(debug) console.log(Util);
 			var cfg = {
 				schema, 
 				url: urlConfig.secure + '://' + urlConfig.host + urlConfig.port + '/app/' + urlConfig.appId
 			};
-			console.log('config',cfg);
+			if(debug) console.log('config',cfg);
 
 			$("#addSelDim").click(function(){
-				console.log("add master dimension group based on selections");
+				if(debug) console.log("add master dimension group based on selections");
 		    	var selections = [];
 				const session = enigma.create(cfg);
 				session.open().then((global) => {
 					global.getActiveDoc().then((doc) => {
-						console.log("Connected to QIX");
+						if(debug) console.log("Connected to QIX");
 						doc.createSessionObject({
 							"qInfo": {
 								"qId": "",
@@ -70,101 +71,118 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 						})
 						.then((sessionObject) => sessionObject.getLayout())
 					    .then((layout) => {
-					    	console.log(JSON.stringify(layout, null, '  '))
-					    	console.log(JSON.stringify(layout.qSelectionObject.qSelections, null, '  '))
-					    	for(i=0; i<layout.qSelectionObject.qSelections.length; i++){
-					    		sField = {};
-					    		sField['name'] = layout.qSelectionObject.qSelections[i].qField;
-					    		sField['vals'] = [];
-					    		for(j=0; j<layout.qSelectionObject.qSelections[i].qSelectedFieldSelectionInfo.length; j++){
-					    			sField['vals'].push(layout.qSelectionObject.qSelections[i].qSelectedFieldSelectionInfo[j].qName);
-					    		}
-					    		selections.push(sField);
-					    	}
-					    	console.log("selections",selections);
-					    })
-						.then(() => {
-							console.log("Current Selections for dimension", selections);
+					    	if(debug) console.log(JSON.stringify(layout, null, '  '))
+					    	if(debug) console.log(JSON.stringify(layout.qSelectionObject.qSelections, null, '  '))
 							
-							if(selections.length != 1){
+							if(layout.qSelectionObject.qSelections.length != 1){
 								return Promise.reject("Please have exactly one field with selections");
 							}
 
-							var dimDef = {
-						      "qInfo": {
-						        "qType": "dimension"
-						      },
-						      "qDim": {
-						        "title": "",
-						        "qGrouping": "N",
-						        "qFieldDefs": [],
-						        "qFieldLabels": []
-						      },
-						      "qMetaDef": {
-						        "title": "",
-						        "description": "",
-						        "tags": []
-						      }
-						    };
-					    	var ifStmt = "=";
-					    	var dimFields = "";
-					    	var ctr = 0;
-						    for(i=0; i<1;i++){
-						    	dimFields += selections[i].name + ",";
-							    for(j=0; j<selections[i].vals.length;j++){
-							    	ifStmt += "if(\"" + selections[i].name + "\" = '" + selections[i].vals[j] + "', '" + selections[i].vals[j] + "'";
-							    	if(j<selections[i].vals.length-1){
-							    		ifStmt += ",\n";
-							    	}
-							    	ctr++;
-							    }
-							}
-						    for(k=0; k<ctr; k++)
-						    	ifStmt += ")";
-							dimFields = dimFields.substring(0, dimFields.length-1); // remove last comma
+					    	doc.createObject({
+							  qInfo: {
+							    qType: 'my-list-object',
+							  },
+							  qListObjectDef: {
+							    qDef: {
+							      qFieldDefs: [layout.qSelectionObject.qSelections[0].qField],
+							      "qSortCriterias": [
+						            {
+						              "qSortByState": 1,
+						              "qSortByFrequency": 0,
+						              "qSortByNumeric": 0,
+						              "qSortByAscii": 1,
+						              "qSortByLoadOrder": 0,
+						              "qSortByExpression": 0,
+						              "qExpression": {
+						                "qv": ""
+						              }
+						            }
+						          ]
+							    },
+							    // qShowAlternatives: false,
+							    qInitialDataFetch: [{
+							      qTop: 0,
+							      qHeight: 5000,
+							      qLeft: 0,
+							      qWidth: 1,
+							    }],
+							  },
+							})
+							.then((listObject) => {
+								mListObject = listObject;
+								listObject.getLayout()
+								.then((layout) => {
+							        if(debug) console.log('Selected object info:', JSON.stringify(layout, null, '  '));
+							        if(debug) console.log('Selected object info:', JSON.stringify(layout.qInfo, null, '  '));
+							        if(debug) console.log('Selected object state:', JSON.stringify(layout.qListObject.qDimensionInfo.qStateCounts, null, '  '));
+							        if(debug) console.log('Selected object data:', JSON.stringify(layout.qListObject.qDataPages[0].qMatrix, null, '  '));
 
-					    	dimDef.qDim.qFieldDefs.push(ifStmt);
-					    	dimDef.qDim.qFieldLabels.push("Filtered " + dimFields);
-					    	dimDef.qDim.title = "Filtered " + dimFields;
-					    	dimDef.qMetaDef.title = "Filtered " + dimFields;
+						    		sField = {};
+						    		sField['name'] = layout.qListObject.qDimensionInfo.qFallbackTitle;
+						    		sField['vals'] = [];
+									layout.qListObject.qDataPages[0].qMatrix.forEach( function ( row ) {
+										if(row[0].qState == 'S')
+											sField['vals'].push(row[0].qText);
+									} );
 
-					    	console.log("dimDef",dimDef);
+							    	if(debug) console.log("sField",sField);
 
-							doc.createDimension(dimDef)
-						    .then(result => {
-						    	console.log(result);
-						    	if(result.delta){
-						    		$("#grouperTextSel").children().slice(2).remove();
+									var dimDef = {
+								      "qInfo": {
+								        "qType": "dimension"
+								      },
+								      "qDim": {
+								        "title": "",
+								        "qGrouping": "N",
+								        "qFieldDefs": [],
+								        "qFieldLabels": []
+								      },
+								      "qMetaDef": {
+								        "title": "",
+								        "description": "",
+								        "tags": []
+								      }
+								    };
+							    	var ifStmt = "=";
+							    	var ctr = 0;
+								    for(i=0; i<sField.vals.length;i++){
+								    	ifStmt += "if(\"" + sField.name + "\" = '" + sField.vals[i] + "', '" + sField.vals[i] + "'";
+								    	if(i<sField.vals.length-1){
+								    		ifStmt += ",\n";
+								    	}
+								    	ctr++;
+									}
+								    for(k=0; k<ctr; k++)
+								    	ifStmt += ")";
 
-									var msg = "Your new master dimension has been added";
-									var toast = "<div class='lui-toast' id='grouperToast'><span>" + msg + "</span></div>"
-									$("#grouperTextSel").append(toast);
-									$("#grouperToast").fadeOut(4000);
-									setTimeout(function(){$("#grouperToast").remove();},4000);
-						    	}
-						    });
-						    // .then(doc.createSessionObject({
-						    // 	"qInfo": {
-						    // 		"qId": "mySessionObject",
-						    // 		"qType": "DimensionList"
-						    // 	},
-						    // 	"qDimensionListDef": {
-							   //      "qType": "Dimension",
-							   //      "qData": {
-										// "title": "/title",
-										// "tags": "/tags",
-										// "grouping": "/qDim/qGrouping",
-										// "info": "/qDimInfos"
-							   //      }
-							   //  }
-						    // }))
-						    // .then(sessionObj => sessionObj.getLayout())
-						    // .then(layout => console.log(JSON.stringify(layout, null, '  ')))
-						})
+							    	dimDef.qDim.qFieldDefs.push(ifStmt);
+							    	dimDef.qDim.qFieldLabels.push("Filtered " + sField['name']);
+							    	dimDef.qDim.title = "Filtered " + sField['name'];
+							    	dimDef.qMetaDef.title = "Filtered " + sField['name'];
+
+							    	if(debug) console.log("dimDef",dimDef);
+
+									doc.createDimension(dimDef)
+								    .then(result => {
+								    	if(debug) console.log(result);
+								    	if(result.delta){
+								    		$("#grouperTextSel").children().slice(2).remove();
+
+											var msg = "Your new master dimension has been added";
+											var toast = "<div class='lui-toast' id='grouperToast'><span>" + msg + "</span></div>"
+											$("#grouperTextSel").append(toast);
+											$("#grouperToast").fadeOut(4000);
+											setTimeout(function(){$("#grouperToast").remove();},4000);
+								    	}
+								    });
+
+								});
+							});
+					    })
 						.then(function(error){ 
 							// not called 
 						}, function(error){
-							console.log(error);
+							if(debug) console.log(error);
 							var toast = "<div class='lui-toast' id='grouperToast'><span>" + error + "</span></div>"
 							$("#grouperTextSel").append(toast);
 							$("#grouperToast").fadeOut(4000);
@@ -172,18 +190,18 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 						})
 					})
 				}).catch(function(err) {
-					console.log('Something went wrong', err);
+					if(debug) console.log('Something went wrong', err);
 				});
 			});
 
 			$("#addNewDim").click(function(){
-				console.log("add master dimension group based on new field selection");
+				if(debug) console.log("add master dimension group based on new field selection");
 		    	var fields = [];
 		    	var mListObject;
 				const session = enigma.create(cfg);
 				session.open().then((global) => {
 					global.getActiveDoc().then((doc) => {
-						console.log("Connected to QIX");
+						if(debug) console.log("Connected to QIX");
 						doc.createObject({
 							qInfo: {
 								qType: 'my-field-list',
@@ -192,7 +210,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 						})
 			          	.then(object => object.getLayout())
 			          	.then(layout => {
-			          		console.log('Field list:', JSON.stringify(layout, null, '  '));
+			          		if(debug) console.log('Field list:', JSON.stringify(layout, null, '  '));
 			          		var list = "<select class='lui-select' id='grouperNewDimField'>";
 			          		list += "<option selected disabled>Select the field to filter on</option>";
 			          		layout.qFieldList.qItems.forEach( function ( row ) {
@@ -203,7 +221,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 
 			          		$("#grouperNewDimField").change(function(){
 			          			var val = $("#grouperNewDimField option:selected").val();
-			          			console.log('grouper field selected',val);
+			          			if(debug) console.log('grouper field selected',val);
 
 								doc.createObject({
 								  qInfo: {
@@ -239,9 +257,9 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 									mListObject = listObject;
 									listObject.getLayout()
 									.then((layout) => {
-								        console.log('Generic object info:', JSON.stringify(layout.qInfo, null, '  '));
-								        console.log('List object state:', JSON.stringify(layout.qListObject.qDimensionInfo.qStateCounts, null, '  '));
-								        console.log('List object data:', JSON.stringify(layout.qListObject.qDataPages[0].qMatrix, null, '  '));
+								        if(debug) console.log('Generic object info:', JSON.stringify(layout.qInfo, null, '  '));
+								        if(debug) console.log('List object state:', JSON.stringify(layout.qListObject.qDimensionInfo.qStateCounts, null, '  '));
+								        if(debug) console.log('List object data:', JSON.stringify(layout.qListObject.qDataPages[0].qMatrix, null, '  '));
 
 						          		var listbox = "<div id='grouperFieldValues' style='overflow: auto'>";
 						          		listbox += "<ol id='grouperSelect'>";
@@ -261,7 +279,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 									    $( "#grouperSelect" ).selectable({
 
 									    	unselected: function(e, ui){
-									    		console.log(ui.unselected);
+									    		if(debug) console.log(ui.unselected);
 									    		$(ui.unselected).children('span').remove();
 									    	},
 									    	selected: function(e, ui){
@@ -272,10 +290,10 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 
 									    mListObject.on('changed', () => {
 									    	mListObject.getLayout().then(layout => {
-									    		console.log("changed mListObject", JSON.stringify(layout, null, '  '));
+									    		if(debug) console.log("changed mListObject", JSON.stringify(layout, null, '  '));
 
 												layout.qListObject.qDataPages[0].qMatrix.forEach( function ( row ) {
-													console.log($("#grouperSelect li").filter(function() { return this.innerHTML === row[0].qText; }));
+													if(debug) console.log($("#grouperSelect li").filter(function() { return this.innerHTML === row[0].qText; }));
 										    		// $("#grouperSelect li").filter(function() { return this.innerHTML === row[0].qText; })
 										    		$("li").filter(function() { return this.innerText === row[0].qText; })
 														.removeClass("stateO stateA stateS stateX stateXS")
@@ -291,11 +309,11 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 									        $("#grouperSelect .ui-selected").each(function() {
 								    			sField['vals'].push($(this).text());
 									        });
-									        console.log(JSON.stringify(sField, null, '  '));
-									        console.log("# sels", sField.vals.length);
+									        if(debug) console.log(JSON.stringify(sField, null, '  '));
+									        if(debug) console.log("# sels", sField.vals.length);
 
 											if(sField.vals.length == 0){
-												console.log("NO SELECTIONS");
+												if(debug) console.log("NO SELECTIONS");
 												var error = "Please select at least one value";
 												var toast = "<div class='lui-toast' id='grouperToast'><span>" + error + "</span></div>"
 												$("#grouperTextNew").append(toast);
@@ -337,11 +355,11 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 									    	dimDef.qDim.title = "Filtered " + sField.name;
 									    	dimDef.qMetaDef.title = "Filtered " + sField.name;
 
-									    	console.log("dimDef",dimDef);
+									    	if(debug) console.log("dimDef",dimDef);
 
 											doc.createDimension(dimDef)
 										    .then(result => {
-										    	console.log(result);
+										    	if(debug) console.log(result);
 										    	if(result.delta){
 										    		$("#grouperTextNew").children().slice(2).remove();
 
@@ -352,24 +370,6 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 													setTimeout(function(){$("#grouperToast").remove();},4000);
 										    	}
 										    });
-										    // .then(doc.createSessionObject({
-										    // 	"qInfo": {
-										    // 		"qId": "mySessionObject",
-										    // 		"qType": "DimensionList"
-										    // 	},
-										    // 	"qDimensionListDef": {
-											   //      "qType": "Dimension",
-											   //      "qData": {
-														// "title": "/title",
-														// "tags": "/tags",
-														// "grouping": "/qDim/qGrouping",
-														// "info": "/qDimInfos"
-											   //      }
-											   //  }
-										    // }))
-										    // .then(sessionObj => sessionObj.getLayout())
-										    // .then(layout => console.log(JSON.stringify(layout, null, '  ')))
-
 						          		})
 
 								    })
@@ -383,11 +383,11 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 			});
 
 			$("#addNewBin").click(function(){
-				console.log("add master dimension based on bins");
+				if(debug) console.log("add master dimension based on bins");
 				const session = enigma.create(cfg);
 				session.open().then((global) => {
 					global.getActiveDoc().then((doc) => {
-						console.log("Connected to QIX");
+						if(debug) console.log("Connected to QIX");
 						doc.createObject({
 							qInfo: {
 								qType: 'my-field-list',
@@ -396,7 +396,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 						})
 			          	.then(object => object.getLayout())
 			          	.then(layout => {
-			          		console.log('Field list:', JSON.stringify(layout, null, '  '));
+			          		if(debug) console.log('Field list:', JSON.stringify(layout, null, '  '));
 			          		var list = "<select class='lui-select' id='grouperNewBinField'>";
 			          		list += "<option selected disabled>Select the field to filter on</option>";
 			          		layout.qFieldList.qItems.forEach( function ( row ) {
@@ -407,7 +407,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 
 			          		$("#grouperNewBinField").change(function(){
 			          			var val = $("#grouperNewBinField option:selected").val();
-			          			console.log('grouper field selected',val);
+			          			if(debug) console.log('grouper field selected',val);
 
 								doc.createObject({
 								  qInfo: {
@@ -443,9 +443,9 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 									mListObject = listObject;
 									listObject.getLayout()
 									.then((layout) => {
-								        console.log('Generic object info:', JSON.stringify(layout.qInfo, null, '  '));
-								        console.log('List object state:', JSON.stringify(layout.qListObject.qDimensionInfo.qStateCounts, null, '  '));
-								        console.log('List object data:', JSON.stringify(layout.qListObject.qDataPages[0].qMatrix, null, '  '));
+								        if(debug) console.log('Generic object info:', JSON.stringify(layout.qInfo, null, '  '));
+								        if(debug) console.log('List object state:', JSON.stringify(layout.qListObject.qDimensionInfo.qStateCounts, null, '  '));
+								        if(debug) console.log('List object data:', JSON.stringify(layout.qListObject.qDataPages[0].qMatrix, null, '  '));
 
 						          		var listbox = "<div id='grouperBinFieldValues' style='overflow: auto; width: 100%'>";
 						          		listbox += "<div style='width:50%; display: inline; float: left;'>";
@@ -497,11 +497,10 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 
 									    mListObject.on('changed', () => {
 									    	mListObject.getLayout().then(layout => {
-									    		console.log("changed mListObject", JSON.stringify(layout, null, '  '));
+									    		if(debug) console.log("changed mListObject", JSON.stringify(layout, null, '  '));
 
 												layout.qListObject.qDataPages[0].qMatrix.forEach( function ( row ) {
-													// console.log($("#grouperBinSelect li").filter(function() { return this.innerHTML === row[0].qText; }));
-										    		$("li").filter(function() { console.log(this.innerText); return this.innerText === row[0].qText; })
+										    		$("li").filter(function() { return this.innerText === row[0].qText; })
 														.removeClass("stateO stateA stateS stateX stateXS")
 														.addClass("state"+row[0].qState);
 												});
@@ -517,7 +516,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 										    }).disableSelection();
 
 											$(".removeGroupBin").click(function() {
-												console.log(this);
+												if(debug) console.log(this);
 												if($("#bins").children().length > 1){
 													$(this).parent().parent().parent().remove();
 												}
@@ -525,7 +524,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 										});
 
 										$(".removeGroupBin").click(function() {
-											console.log(this);
+											if(debug) console.log(this);
 											if($("#bins").children().length > 1){
 												$(this).parent().parent().parent().remove();
 											}
@@ -543,22 +542,22 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 									        	var ol = this;
 							          			var sField = {};
 										        $(ol).find("input").each(function() {
-										        	console.log($(this).val());
+										        	if(debug) console.log($(this).val());
 										        	sField.name = $(this).val();
 										        	selections.push(sField);
 									        	});
 									        	sVals = [];
 										        $(ol).find(".data").each(function() {
-										        	console.log($(this).text());
+										        	if(debug) console.log($(this).text());
 										        	sVals.push($(this).text());
 										        	selections[i].vals = sVals;
 									        	});
 									        });
-								    		console.log(JSON.stringify(selections, null, '  '))
+								    		if(debug) console.log(JSON.stringify(selections, null, '  '))
 
 										    for(i=0; i<selections.length;i++){
 												if(!selections[i].hasOwnProperty("vals")){
-													console.log("NO SELECTIONS");
+													if(debug) console.log("NO SELECTIONS");
 													var error = "Please put at least 1 value in each bin";
 													var toast = "<div class='lui-toast' id='grouperToast'><span>" + error + "</span></div>"
 													$("#createNewBin").prepend(toast);
@@ -608,11 +607,11 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 									    	dimDef.qDim.title = "Binned " + val;
 									    	dimDef.qMetaDef.title = "Binned " + val;
 
-									    	console.log("dimDef",dimDef);
+									    	if(debug) console.log("dimDef",dimDef);
 
 											doc.createDimension(dimDef)
 										    .then(result => {
-										    	console.log(result);
+										    	if(debug) console.log(result);
 										    	if(result.delta){
 										    		$("#grouperTextBin").children().slice(2).remove();
 
