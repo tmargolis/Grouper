@@ -15,7 +15,7 @@ function ( qlik, $, Util, enigma, schema, leoCSS, myCSS, jqueryUI, jqueryUICSS) 
 			var html;
 			var buttonSelections;
 			var debug = false;
-			buttonSelections = "<div class='lui-text-default' id='grouperTextSel'>Create a new master item to group currently selected values (limit 6) from a single field.<BR>";
+			buttonSelections = "<div class='lui-text-default' id='grouperTextSel'>Create a new master item to group currently selected values from a single field.<BR>";
 			buttonSelections += "<button class='lui-button' id='addSelDim'>";
 			buttonSelections += "<span class='lui-button__icon  lui-icon  lui-icon--plus'></span><span class='lui-button__text'>add master dimension</span>";
 			buttonSelections += "</button></div>";
