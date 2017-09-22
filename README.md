@@ -1,10 +1,12 @@
 # Grouper
-Qlik extension to group items from a field
+Qlik Sense extension to enable grouping items from a field. Groups are created using Qlik's calculated dimensions which show up in your Master items list.
 
 There are three options to create new groups:
-* Create a new group using current selections
-* Create a new group by selecting a field and then selecting the values you'd like to include in the group
-* Create a new group by selecting a field and then placing values into bins
+* Create a new group using current selections.
+  * Only one field may contain selections
+  * Can not create new calculated dimensions from existing calculated dimensions
+* Create a new group by choosing a field and then selecting the values you'd like to include in the group
+* Create a new group by choosing a field and then dragging values into bins
 
 Please view this video for details.
 
